@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>คำนวณคาร์บอนฟุตพริ้นท์</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(to bottom right, #c1a3ff, #e3d0ff);
+        }
+        h1 {
+            color: #4b0082;
+            text-shadow: 1px 1px 2px #ffffff;
+        }
+        input {
+            margin: 5px;
+            padding: 8px;
+            width: 160px;
+            border-radius: 10px;
+            border: 1px solid #ccc;
+            box-shadow: 1px 1px 5px rgba(0,0,0,0.1);
+        }
+        button {
+            margin: 10px;
+            padding: 12px 25px;
+            background: #9b59b6;
+            color: white;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+        }
+        button:hover {
+            background: #8e44ad;
+        }
+        .result {
+            font-size: 1.1em;
+            margin-top: 20px;
+        }
+        #advice {
+            color: #6a0dad;
+            font-weight: bold;
+            background: #f2e6ff;
+            padding: 10px;
+            border-radius: 10px;
+            display: inline-block;
+            margin-top: 10px;
+            max-width: 90%;
+            white-space: pre-line;
+        }
+        canvas {
+            max-width: 450px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 2px 2px 10px rgba(0,0,0,0.1);
+        }
+        @media (max-width: 480px) {
+            input { width: 140px; }
+            canvas { max-width: 320px; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>คำนวณคาร์บอนฟุตพริ้นท์ 🌱</h1>
+
+    <div>
+        <label>ระยะทางรถยนต์ (กม./เดือน): </label>
+        <input type="number" id="car" value="0" min="0" placeholder="กม./เดือน"><br>
+
+        <label>จำนวนมื้ออาหารที่มีเนื้อสัตว์เป็นองค์ประกอบหลัก (มื้อ/เดือน): </label>
+        <input type="number" id="meat" value="0" min="0" placeholder="มื้อ/เดือน"><br>
+
+        <label>การใช้ไฟฟ้า (kWh/เดือน): </label>
+        <input type="number" id="electric" value="0" min="0" placeholder="kWh/เดือน"><br>
+
+        <button id="calcBtn">คำนวณ</button>
+    </div>
+
+    <div class="result">
+        <p id="total">รวม: 0 kg CO₂</p>
+        <p id="advice"></p>
+    </div>
+
+    <canvas id="co2Chart"></canvas>
+
+    <script>
+        let chart;
+
+        function calculate() {
+            let car = parseFloat(document.getElementById("car").value) || 0;
+            let meat = parseFloat(document.getElementById("meat").value) || 0;
+            let electric = parseFloat(document.getElementById("electric").value) || 0;
+
+            // ตัวแปลง (ตัวอย่าง): รถยนต์ 0.21 kg CO2 ต่อ กม., เนื้อสัตว์ 2.5 kg CO2 ต่อมื้อ, ไฟฟ้า 0.4 kg CO2 ต่อ kWh
+            let co2_car = car * 0.21;
+            let co2_meat = meat * 2.5;
+            let co2_electric = electric * 0.4;
+
+            let total = co2_car + co2_meat + co2_electric;
+            document.getElementById("total").innerText = "รวม: " + total.toFixed(2) + " kg CO₂";
+
+            // คำแนะนำลด CO₂
+            let advice = "";
+            if(car > 50) advice += "🚗 พยายามใช้ขนส่งสาธารณะหรือจักรยานเพื่อลด CO₂\n";
+            if(meat > 15) advice += "🥩 ลดเนื้อสัตว์หรือเพิ่มผักในมื้ออาหาร\n";
+            if(electric > 200) advice += "💡 ปิดไฟหรือใช้พลังงานหมุนเวียน\n";
+            if(advice === "") advice = "👍 คุณทำดีแล้ว CO₂ อยู่ในเกณฑ์เหมาะสม!";
+            document.getElementById("advice").innerText = advice;
+
+            // กราฟวงกลมสีพาสเทล ฟ้า-ชมพู-เหลือง
+            const ctx = document.getElementById('co2Chart').getContext('2d');
+            if(chart) chart.destroy();
+            chart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['รถยนต์', 'เนื้อสัตว์', 'ไฟฟ้า'],
+                    datasets: [{
+                        data: [co2_car, co2_meat, co2_electric],
+                        backgroundColor: ['#a0c4ff','#ffc6ff','#fff7a0'],
+                        borderColor: ['#8bb0ff','#ff99ff','#fff280'],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    animation: { animateScale: true },
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.label + ': ' + context.formattedValue + ' kg CO₂';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // รองรับการคลิกปุ่มและกด Enter
+        document.getElementById('calcBtn').addEventListener('click', calculate);
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') calculate();
+        });
+    </script>
+
+</body>
+</html>
